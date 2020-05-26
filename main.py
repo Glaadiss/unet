@@ -1,22 +1,16 @@
 from model import *
 from data import *
+from sklearn.model_selection import train_test_split
+
 
 #os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
+X, y = get_data()
+X_train, X_valid, y_train, y_valid = train_test_split(X, y, test_size=0.25, random_state=2018)
 
-data_gen_args = dict(rotation_range=0.2,
-                    width_shift_range=0.05,
-                    height_shift_range=0.05,
-                    shear_range=0.05,
-                    zoom_range=0.05,
-                    horizontal_flip=True,
-                    fill_mode='nearest')
-myGene = trainGenerator(2,'data/membrane/train','image','label',data_gen_args,save_to_dir = None)
+model = unet((im_height, im_width, 1))
+model_checkpoint = ModelCheckpoint('unet_berlin.hdf5', monitor='loss',verbose=1, save_best_only=True)
+model.fit(X_train, y_train,steps_per_epoch=300,epochs=1, callbacks=[model_checkpoint])
 
-model = unet()
-model_checkpoint = ModelCheckpoint('unet_membrane.hdf5', monitor='loss',verbose=1, save_best_only=True)
-model.fit_generator(myGene,steps_per_epoch=300,epochs=1,callbacks=[model_checkpoint])
-
-testGene = testGenerator("data/membrane/test")
-results = model.predict_generator(testGene,30,verbose=1)
-saveResult("data/membrane/test",results)
+results = model.predict(X_valid)
+saveResult("data/berlin/test", results)
